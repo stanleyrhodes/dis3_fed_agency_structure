@@ -1,0 +1,1731 @@
+---
+title: "Supplementary Materials Code for SM1 and SM4"
+author: "Stan Rhodes"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file only includes code for:
+  SM 1. List of the excluded agencies.
+  SM 4. Agency outliers in the data.
+  
+The other Supplementary Materials are provided as files and so on.
+
+See the Supplementary Materials document for more details.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(forcats)
+library(viridis)
+library(readr)
+```
+
+
+# Intial data setup
+
+There's a lot of data, so it's better to process one year at a time than try to process all 18 years of data at multiple steps.
+
+NOTE: The `eval=FALSE` below prevents the lengthy data merging process from running, but `eval=TRUE` can be set to run the process.
+
+# A series of processes for each year at a time
+
+```{r eval=FALSE}
+# Remove all objects
+rm(list = ls())
+
+copy_the_yearlist <- function() {
+  yearlist <- as.list(seq(from=2004, to=2021)) # DO THEM ALL!!!
+  # yearlist <- as.list(c(2021))
+  # yearlist <- as.list(c(2004, 2020, 2021))
+  # yearlist <- as.list(seq(from=2004, to=2017)) # killed R
+  return(yearlist)
+}
+
+### Load the files, do a year at a time to make it manageable for the RAM
+
+for (year_i in copy_the_yearlist()) {
+  year <- as.character(year_i)
+  filename <- paste0("FACTDATA_SEP", year, ".TXT")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("fed", year, "_df")
+  assign(df_name, 
+    readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+      escape_double = TRUE, col_names = TRUE, # col_types = NULL,
+      locale = default_locale(), na = c("", "NA"),
+      comment = "", trim_ws = FALSE, skip = 0,
+      # col_types = "text", 
+      # col_types = list(.default = col_character()),
+      col_types = cols_only(
+        AGYSUB = col_character(),
+        LOC = col_character(),
+        GSEGRD = col_character(),
+        OCC = col_character(),
+        PATCO = col_character(),
+        PPGRD = col_character(),
+        SALLVL = col_character(),
+        SUPERVIS = col_character(),
+        TOA = col_character(),
+        SALARY = col_character() )) %>%     
+    mutate(SALARY = parse_number(SALARY)) %>%
+    mutate(year = year) %>%
+    mutate_at(vars(SALARY, year), list(as.double)) %>%
+    select(AGYSUB, LOC, GSEGRD, OCC, PATCO, 
+           PPGRD, SALLVL, SUPERVIS, TOA, SALARY, year)
+  )
+  
+  # DTagy.txt - AGYSUB
+
+  filename <- paste0("DTagy.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTagy", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+
+  # DTloc.txt - LOC
+
+  year <- as.character(year_i)
+  filename <- paste0("DTloc.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTloc", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+
+  # DTocc.txt - OCC
+
+  year <- as.character(year_i)
+  filename <- paste0("DTocc.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTocc", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+
+  # DTppgrd.txt - PPGRD
+
+  year <- as.character(year_i)
+  filename <- paste0("DTppgrd.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTppgrd", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+
+  # DTsallvl.txt - SALLVL
+
+  year <- as.character(year_i)
+  filename <- paste0("DTsallvl.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTsallvl", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+
+  # DTsuper.txt - SUPERVIS
+
+  year <- as.character(year_i)
+  filename <- paste0("DTsuper.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTsuper", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+
+  # DTtoa.txt - TOA
+
+  year <- as.character(year_i)
+  filename <- paste0("DTtoa.txt")
+  path <- file.path("D:", "data", "ch3_dissertation", "fedscope_unzip", year, filename, fsep="\\")
+  
+  df_name <- paste0("DTtoa", year, "_df")
+  assign(df_name,
+         readr::read_delim(path, delim = ",", quote = "\"", escape_backslash = TRUE,
+          escape_double = TRUE, col_names = TRUE, col_types = NULL,
+          locale = default_locale(), na = c("", "NA"), quoted_na = TRUE,
+          comment = "", trim_ws = FALSE, skip = 0))
+  
+  print(paste0("About to do ", year, " year."))
+  
+  # Get the df and do the joins.
+  
+  assign(paste0("jnd_", year, "_df"),
+    get(paste0("fed", year, "_df")) %>%
+        dplyr::left_join(get(paste0("DTagy", year, "_df")), by = 'AGYSUB') %>%
+        dplyr::left_join(get(paste0("DTloc", year, "_df")), by = 'LOC') %>%
+        dplyr::left_join(get(paste0("DTocc", year, "_df")), by = 'OCC') %>%
+        dplyr::left_join(get(paste0("DTppgrd", year, "_df")), by = 'PPGRD') %>%
+        dplyr::left_join(get(paste0("DTsallvl", year, "_df")), by = 'SALLVL') %>%
+        dplyr::left_join(get(paste0("DTsuper", year, "_df")), by = 'SUPERVIS') %>%
+        dplyr::left_join(get(paste0("DTtoa", year, "_df")), by = 'TOA')
+  )
+  
+  print(paste0("Just did ", year, " year."))
+
+  # Remove the data objects no longer needed.
+  
+  rm(list=ls(pattern="^fed"))
+  rm(list=ls(pattern="^DT"))
+  
+  print(paste0("Filesize of ", "jnd_", year, "_df", " is ",
+                 format(
+                   object.size(
+                     get(paste0("jnd_", year, "_df"))),
+                   unit = "auto", standard = 'auto')
+               ))
+  
+  # REDO: both the GS level and whether it is a supervisory position,
+  # enabling the measurement of the number of levels of hierarchy.
+    
+  # For this I will filter by supervisory positions,
+  # filter by GS and ES paygrades,
+  # then count the number of distinct paygrades
+  
+  hier_level_df <- 
+  get(paste0("jnd_", year, "_df")) %>%
+    select(AGYSUB, PAYPLAN, PPGRD, SUPERVIS) %>%
+    filter(SUPERVIS == "2") %>%
+    filter(PAYPLAN == 'ES' | PAYPLAN == 'GS') %>%
+    group_by(AGYSUB) %>%
+    summarise(n_hier_levels = n_distinct(PPGRD))
+  # Then join this df below
+  
+  
+  # CREATE AGENCY DATAFRAMES WITH A ROW PER AGENCY
+  
+  get(paste0("jnd_", year, "_df")) %>% 
+    mutate(upper_mgmt = case_when( 
+      (grepl('ES', PPGRD) & SUPERVIS == "2" ) ~ 1,
+      TRUE ~ 0
+      ),
+    middle_employee = case_when(
+      GSEGRD %in% c("11", "12", "13", "14", "15") ~ 1,
+      TRUE ~ 0
+      )) %>%
+    mutate(middle_mgmt = case_when( 
+      (GSEGRD %in% c("11", "12", "13", "14", "15") 
+       & SUPERVIS %in% c("2","4","5","6","7")) ~ 1,
+      (grepl('ES', PPGRD) & SUPERVIS == "2" ) ~ 1,
+      TRUE ~ 0
+      ),
+    frontline_employee = case_when(
+      GSEGRD %in% c("01","02","03","04","05","06","07","08","09","10") ~ 1,
+      TRUE ~ 0
+      )) %>%
+    
+    group_by(AGYSUB) %>% 
+    summarize(ttl_employee_count=n(), across()) %>%
+    filter(ttl_employee_count > 200) %>%
+    ungroup() %>%
+    
+    mutate(
+      contains_es_or_gs = case_when(
+        upper_mgmt == 1 ~ 1,
+        middle_employee == 1 ~ 1,
+        frontline_employee == 1 ~ 1,
+        TRUE ~ 0
+      )) %>%
+    
+    group_by(AGYSUBT) %>%
+    summarize(per_positions = sum(contains_es_or_gs)/n(),
+              agy_size = n(), 
+              across()) %>%
+    # arrange(desc(agy_size)) %>%
+    # arrange(desc(per_positions)) %>%
+    filter(per_positions > .95) %>%
+    ungroup() %>%
+  
+    group_by(AGYSUBT, AGYSUB, agy_size) %>% 
+    summarize(ttl_employee_count=n(),
+              upper_mgmt_count = sum(upper_mgmt),
+              middle_employee_count = sum(middle_employee),
+              middle_mgmt_count = sum(middle_mgmt),
+              frontline_employee_count = sum(frontline_employee),
+              distinct_occ = length(unique(OCC))) %>%
+    left_join(reshape2::dcast(get(paste0("jnd_", year, "_df")), 
+                              AGYSUB ~ LOCT)) %>%
+    mutate(upper_span_control = middle_employee_count/upper_mgmt_count,
+           middle_span_control = frontline_employee_count/middle_mgmt_count) %>%
+    
+    # Join hierarchical differentiation data
+    left_join(hier_level_df, by = 'AGYSUB') %>% 
+  
+    assign(paste0("agencies_", year, "_df") ,., inherits = TRUE)
+    # assign("foo" ,.)
+  
+    rm(list=ls(pattern="^jnd"))
+
+  
+}
+
+
+```
+
+
+```{r eval = FALSE}
+save.image(file='myEnvironment_agencies_dfs_supmat.RData')
+
+```
+
+
+
+```{r}
+# LOAD THE PAY PLAN GRADE EXEC AND MANAGER DATA
+load(file="myEnvironment_agencies_dfs_supmat.RData")
+rm("agencies_list")
+
+```
+
+
+```{r}
+
+rm("all_agencies_df")
+
+# 1. Join all dataframes into one agency dataframe with a column for year.
+
+all_agencies_df <- 
+  mget(ls(pattern = "^agencies_")) %>% map_df(I, .id = "source") %>%
+  mutate(year = gsub("\\D", "", source)) %>%
+  ungroup()
+
+# 2. Delete all rows with an agency that doesn't appear 18(?) times:
+#    NOTE: Very important to use AGYSUB here NOT AGYSUBT.
+
+present_every_year_df <- 
+  all_agencies_df[as.numeric(ave(all_agencies_df$AGYSUB, 
+                                 all_agencies_df$AGYSUB, FUN=length)) >= 18, ]
+
+# Unfortunately, a few of these had a name change somewhere during the years
+# AGYSUB is 96, but AGYSUBT is 107
+distinct(present_every_year_df, AGYSUBT) %>% arrange(AGYSUBT)
+
+# Table of dupes
+
+distinct(present_every_year_df, AGYSUBT, AGYSUB) %>% 
+  arrange(AGYSUBT) %>%
+  group_by(AGYSUB) %>% 
+  summarise(n = sum(n()) ) %>% 
+  filter( n > 1)
+
+# Looks like about 11 had name changes, with AGYSUB GS14 having two name changes.
+
+```
+
+# SM 1. List of the excluded agencies.
+
+Print out the agency list resulting from the all_agencies_df minus the present_every_year_df using anti_join.
+
+Note that a few agencies may have changed names over the 18 years, in which case their AGYSUB will be the same but their AGYSUBT will differ.
+
+```{r echo=FALSE}
+
+excluded_list <- 
+all_agencies_df %>%
+  anti_join(present_every_year_df, by = "AGYSUBT") %>%
+  distinct(AGYSUBT)
+
+# The row math should work
+
+n1 <- all_agencies_df %>% nrow()
+
+n2 <- present_every_year_df %>% nrow()
+
+n3 <- all_agencies_df %>% anti_join(present_every_year_df, by = "AGYSUBT") %>% nrow()
+  
+paste(as.character(n1),"<- All agency count.")
+paste(as.character(n2),"<- Included agency count.")
+paste(as.character(n3),"<- Excluded agency count.")
+if(n1 - n2 == n3) print("Math works out.")
+
+print(excluded_list, n = 200)
+
+```
+
+
+# SM 4. Agency outliers in the data.
+
+Figure 1 says: “Outliers have been removed for clarity, and analyzed in more detail in the Supplemental Materials.”
+
+For this we'll load a previously set up data file that merges the Kim-Lowi types that were coded (meaning, labeled by hand) per agency based on its mission statement.
+
+```{r echo=FALSE}
+# Load what we've done so far as data file.
+load(file="myEnvironment_ready_for_modeling.RData")
+
+
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(forcats)
+library(viridis)
+library(readr)
+library(randomForest)
+
+```
+
+
+
+
+```{r}
+q1_kim_scaled_df <- final_supermaster_df %>%
+  select(year, mission_type, 
+         # agy_size, 
+         # upper_mgmt_count, middle_employee_count, # not ratios, not scaled
+         # middle_mgmt_count, frontline_employee_count, 
+         upper_span_control, 
+         middle_span_control, 
+         hq_ratio, 
+         # sup_ratio, 
+         # rule_count, distinct_occ, 
+         formalization_ratio, 
+         ) %>%
+  mutate(mission_type = factor(mission_type)) %>%
+  mutate(year = as.numeric(year))
+
+# # NOTE: when using scale in mutate with across,
+# # Scaling data stuff is included in the dataframe.
+# # This seems to make plotting things impossible.
+# # If we have to scale, we want to do it like this:
+# cols <- c('agy_size', 'rule_count', 'distinct_occ')
+# q1_scaled_df[cols] <- scale(q1_scaled_df[cols])
+
+#q1_plot <-
+q1_kim_scaled_df %>% 
+  rename(`upper span of control` = upper_span_control,
+         `middle span of control` = middle_span_control,
+         `headquarters ratio` = hq_ratio, 
+         `formalization ratio` = formalization_ratio,
+         ) %>%
+  mutate(mission_type = 
+           case_when(mission_type == "def-for" ~ 'defense or foreign',
+                     mission_type == "dis" ~ 'distributive',
+                     mission_type == "redis" ~ 'redistributive',
+                     mission_type == "reg" ~ 'regulatory',
+                     mission_type == "staff" ~ 'staff',
+                     TRUE ~ as.character(mission_type))) %>%
+  pivot_longer(cols = `upper span of control`:`formalization ratio`,
+               names_to = "attribute", values_to = "value") %>%
+  select(year, attribute, value, mission_type) %>%
+  mutate(value = as.numeric(format(value, scientific=F)),
+         year = factor(year),
+         attribute = factor(attribute)) %>%
+  ggplot(aes(x = year, y = value, fill = attribute)) +
+  #geom_violin() +
+  #geom_boxplot() +
+  geom_boxplot(#outlier.shape = NA #Commenting this out makes outliers show
+               ) +
+  stat_summary(fun=mean, colour="red", geom="line", # linetype = "dashed",
+               aes(group = attribute)) +
+  facet_grid(cols = vars(mission_type), rows = vars(attribute),
+             # ncol = 5, # only for facet_wrap
+             scale = "free_y") +
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1))
+
+# <div data-ordinal="5" style="width: 100%; display: flex; flex-grow: 1; background-image: url(&quot;chunk_output/s/44D82569/cekaoeumesuha/temp/000005.png?resize=0&quot;); background-size: 100% 100%;"></div>
+
+```
+
+## Preparing to look at PCA and the effect of outliers on PCA
+
+```{r}
+
+only2020 <- final_supermaster_df %>%
+  filter(year == 2020) %>%
+  mutate(foo = paste0(mission_type, "_", AGYSUB)) %>%
+  remove_rownames() %>%
+  column_to_rownames(var="foo")
+
+df_for_pca <- only2020 %>%
+  select(year,
+         mission_type, 
+         agy_size, 
+         upper_mgmt_count, middle_employee_count, middle_mgmt_count, 
+         frontline_employee_count, 
+         upper_span_control, middle_span_control,
+         hq_ratio, 
+         sup_ratio, 
+         formalization_ratio, 
+         n_hier_levels,
+         distinct_occ, 
+         rule_count) %>%
+  mutate(mission_type = factor(mission_type)) %>%
+  mutate(year = as.numeric(year))
+
+df_6var_for_pca <- df_for_pca %>%
+  select(#mission_type,
+         distinct_occ,
+         upper_span_control, middle_span_control, 
+         hq_ratio, 
+         n_hier_levels,
+         rule_count) %>%
+  rename(`distinct occupations` = distinct_occ,
+         #`mission type` = mission_type,
+         `upper span of control` = upper_span_control,
+         `middle span of control` = middle_span_control,
+         `headquarters ratio` = hq_ratio, 
+         `number of levels` = n_hier_levels,
+         `rule count` = rule_count)
+
+cor.mat <- round(cor(df_6var_for_pca),2)
+head(cor.mat[, 1:6])
+
+library("corrplot")
+corrplot(cor.mat, type="upper", order="hclust", 
+         tl.col="black", tl.srt=45) +
+  scale_color_viridis_c()
+
+```
+
+
+```{r}
+# install.packages("PerformanceAnalytics")
+
+library("PerformanceAnalytics")
+chart.Correlation(df_6var_for_pca[, 1:6], histogram=TRUE, pch=19,
+                   cex.labels=5)
+
+# <div data-ordinal="6" style="width: 100%; display: flex; flex-grow: 1; background-image: url(&quot;chunk_output/F827DD1E0E0665E/79DE1591/ccfln3ibcwymg/temp/000006.png?resize=2&quot;); background-size: 100% 100%;"></div>
+
+# The dev version on github may allow me to resize the text.
+# Restart R.
+# devtools::install_github("braverock/PerformanceAnalytics")
+# detach("package:PerformanceAnalytics", unload = TRUE)
+# install.packages("stringr", dependencies=TRUE)
+```
+
+## Running a PCA to look at the impact of outliers on it
+
+```{r}
+
+df_6var_for_pca <- df_for_pca %>%
+  select(mission_type,
+         distinct_occ,
+         upper_span_control, middle_span_control, 
+         hq_ratio, 
+         n_hier_levels,
+         rule_count) %>%
+  rename(`distinct occupations` = distinct_occ,
+         `mission type` = mission_type,
+         `upper span of control` = upper_span_control,
+         `middle span of control` = middle_span_control,
+         `headquarters ratio` = hq_ratio, 
+         `number of levels` = n_hier_levels,
+         `rule count` = rule_count)
+
+
+library("FactoMineR")
+library("factoextra")
+
+results_pca <- PCA(df_6var_for_pca, graph = FALSE, quali.sup=1)
+
+print(results_pca)
+
+eigenvalues <- results_pca$eig
+head(eigenvalues[, 1:2])
+
+fviz_screeplot(results_pca, ncp=10)
+
+
+# Coordinates of variables on the principal components
+print("Coordination location of vars on PCs")
+head(results_pca$var$coord)
+
+# Cos2 : quality of variables on the factor map
+print("Cos2:")
+head(results_pca$var$cos2)
+
+# Contributions of the variables to the principal components
+print("Contributions:")
+head(results_pca$var$contrib)
+
+#Graph of variables
+plot(results_pca, choix = "var")
+
+fviz_pca_ind(results_pca)
+fviz_pca_ind(results_pca, geom="point")
+```
+
+
+```{r}
+
+
+# This PCA should be in Supplementary Materials.
+# The biplot in particular show visually how much affect the outliers
+# are having on the components and why using PCA or k-means methods would
+# be a bad idea.
+
+# There are methods for removing outliers for a robust PCA
+# but there don't seem to be any ready-to-use R implementations of them.
+# See https://stats.stackexchange.com/q/389204 for more info.
+
+# Better colored graph
+fviz_pca_var(results_pca, col.var="contrib", 
+             labelsize = 4,
+             repel = TRUE) +
+  scale_color_viridis_c(option = "D",
+                        direction = -1,
+                        begin = 0,
+                        end = .8) + 
+  theme_bw()
+
+fviz_pca_biplot(results_pca, label = "var", habillage=df_6var_for_pca$`mission type`,
+               addEllipses=TRUE, ellipse.level=0.95,
+               ggtheme = theme_minimal())
+```
+
+
+We can see the issue here with doing PCA is the presence of a number of outliers that have strong influence on the components. This supports doing a hierarchical clustering analysis instead.
+
+The biplot, in particular, shows visually how much affect the outliers are having on the components and why using PCA or k-means methods would be a bad idea.
+
+Although there are theoretical methods for removing outliers for a robust PCA, 1) there don't seem to be any ready-to-use R implementations of them, and 2) we'd get better visualizations and interpretability from doing hierarchical agglomerative clustering anyway, which is what we do in the main paper.
+
+
+# Random forest hyperparameter tuning and analysis
+
+```{r echo=FALSE}
+# Load what we've done so far as data file.
+load(file="myEnvironment_ready_for_modeling.RData")
+
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(forcats)
+library(viridis)
+library(readr)
+library(randomForest)
+
+rm(agencies_2004_df,
+  agencies_2005_df,
+  agencies_2006_df,
+  agencies_2007_df,
+  agencies_2008_df,
+  agencies_2009_df,
+  agencies_2010_df,
+  agencies_2011_df,
+  agencies_2012_df,
+  agencies_2013_df,
+  agencies_2014_df,
+  agencies_2015_df,
+  agencies_2016_df,
+  agencies_2017_df,
+  agencies_2018_df,
+  agencies_2019_df,
+  agencies_2020_df,
+  agencies_2021_df,
+  all_agencies_df,
+  cfr_counts_df,
+  cfr_df,
+  hier_level_df,
+  final_master_df,
+  hq_master_df,
+  jnd_master_df,
+  master_df,
+  present_every_year_df)
+
+gc() # run garbage collection
+
+```
+Data prep:
+
+```{r}
+
+library(tuneRanger)
+library(ranger)
+library(mlr)
+
+library(tictoc)
+library(foreach)
+library(doParallel)
+
+# 1. I'll need to tune for every RF.
+  # 1.1. Split the data out by years.
+  # 1.2. Loop thru those dfs, doing a tuneranger for each.
+  # 1.3. Each tuneranger should be done 44 times.
+
+# set.seed(1)
+
+# 1.1. Split the data out by years.
+
+for_splitting_df <- final_supermaster_df %>%
+  select(year, mission_type, 
+         # agy_size, 
+         # upper_mgmt_count, middle_employee_count, # not ratios, not scaled
+         # middle_mgmt_count, frontline_employee_count, 
+         upper_span_control, middle_span_control, 
+         hq_ratio, 
+         # sup_ratio, 
+         # formalization_ratio,
+         n_hier_levels,
+         rule_count, 
+         distinct_occ) %>%
+  mutate(mission_type = factor(mission_type)) %>%
+  mutate(year = as.numeric(year)) %>%
+  as.data.frame()
+
+yearly_dfs <- for_splitting_df %>%
+  group_split(year)
+# still makes tibbles, which could be an issue for tuneranger
+
+# head(yearly_dfs, n = 18)
+
+```
+
+Then tune (BEWARE OF RUNNING THIS: it takes a while, and overwrites CSVs)
+
+```{r}
+
+# 1.2. Loop thru those dfs, doing a tuneranger for each.
+
+# Make the function to use for parallel processing, and call farther below
+
+get_tunings <- function(final_data.task){
+  foreach (i=1:45, .export='tuneRanger', .combine=rbind) %dopar% { 
+    # this should be 1:45, but 4 for testing.
+    # 44 cuz empirically the best param set occurs as 10% of rows in tuneranger
+    # .9^n < .01
+    # n > 43.7087 if I want to get the best param set 99% of the time
+    
+    # thename <- paste0("optpath", i, ".RData")
+
+    # Tuning
+    res = tuneRanger(final_data.task,
+                     num.trees = 1000, num.threads = 2, 
+                     iters = 70,
+                     # save.file.path = thename,
+                     show.info = FALSE)
+    # According to tuneranger authors, iters should be at least 70, 5 for testing
+      
+    # as.data.frame(res[1])
+    as.list(as.data.frame(res[1]))
+}
+}
+
+# These are empty dfs for collating the param set results
+empty_df <- data.frame(mtry = double(),
+                  min.node.size  = double(),
+                  sample.fraction = double(),
+                  multiclass.brier = double(),
+                  exec.time = double()
+                  )
+
+# 2. Tune for every year.
+
+for (i in 1:length(yearly_dfs)) {
+#for (i in 1:3) {
+  # yearly_dfs[[i]]
+  tic("parallel")
+
+  # A mlr task has to be created in order to use the package
+  final_data.task = makeClassifTask(data = yearly_dfs[[i]], target = "mission_type")
+  
+  # Estimate runtime
+  # estimateTimeTuneRanger(final_data.task)
+  # print("\n")
+
+  # empty_df <- empty_df %>%
+  #   dplyr::bind_rows(data_dump)
+  
+  registerDoParallel(3)
+  
+  data_dump <- get_tunings(final_data.task)
+  
+  # 3. Dump the tuneranger output to a CSV file.
+  dumpfilename = paste0("tuneranger_6var_runs_year", yr_list[[i]], ".csv")
+  write.csv(data_dump, dumpfilename, row.names = FALSE)
+  rm(data_dump)
+  rm(final_data.task)
+  
+  doParallel::stopImplicitCluster()
+  
+  gc()
+  
+  object.size(x=lapply(ls(), get)) 
+  print(object.size(x=lapply(ls(), get)), units="Mb") 
+
+  # Mb <- ls() %>% sapply(. %>% get %>% object.size %>% '/'(10^6)) 
+  # cbind(Mb, "Mb") %>% as.data.frame
+  
+  toc()
+}
+
+
+
+object.size(x=lapply(ls(), get)) 
+print(object.size(x=lapply(ls(), get)), units="Mb") 
+
+Mb <- ls() %>% sapply(. %>% get %>% object.size %>% '/'(10^6)) 
+cbind(Mb, "Mb") %>% as.data.frame
+
+
+```
+
+End of RF tuning for 6var, with results saved in CSVs.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(forcats)
+library(viridis)
+library(readr)
+library(randomForest)
+```
+
+
+```{r}
+# 4.1 Loop through CSVs, save to a df with a column for year
+
+# Should have used this filename but accidentally did the test_runs
+# filenames = paste0("tuneranger_6var_runs_year", rep(2004:2021), ".csv")
+filenames = paste0("tuneranger_test_runs_year", rep(2004:2021), ".csv")
+filenames
+
+# 4.2 Get the lowest brier params for each year and save to df.
+
+tr_results_6var_raw <- 
+read_csv(filenames, id = "year") %>%
+   mutate(year = str_remove_all(year, ".csv")) %>%
+   mutate(year = str_remove_all(year, "tuneranger_test_runs_year")) %>%
+   # mutate(year = as.factor(year)) %>%
+   group_by(year) %>%
+   arrange(recommended.pars.multiclass.brier) %>%
+   slice_min(recommended.pars.multiclass.brier, n = 10) %>%
+   ungroup()
+
+# Spot check looks solid. Proceed with getting single param set per year.
+
+tr_results_6var <- 
+  tr_results_6var_raw %>% 
+  select(year, contains("brier"), contains("mtry"), contains("node")) %>%
+  arrange(year, recommended.pars.multiclass.brier) %>%
+  rename(brier = recommended.pars.multiclass.brier) %>%
+  rename(mtry = recommended.pars.mtry) %>%
+  rename(node = recommended.pars.min.node.size) %>%
+  group_by(year) %>%
+  arrange(brier) %>%
+  slice_min(brier, n = 1) %>%
+  ungroup()
+
+# Taking the mean of 5% is taking the mean of the top 2
+
+tr_results_6var_mean <- 
+  tr_results_6var_raw %>% 
+  select(year, contains("brier"), contains("mtry"), contains("node")) %>%
+  arrange(year, recommended.pars.multiclass.brier) %>%
+  rename(brier = recommended.pars.multiclass.brier) %>%
+  rename(mtry = recommended.pars.mtry) %>%
+  rename(node = recommended.pars.min.node.size) %>%
+  group_by(year) %>%
+  arrange(brier) %>%
+  slice_min(brier, n = 2) %>%
+  summarize(mtry_mean = round(mean(mtry)), node_mean = round(mean(node))) %>%
+  ungroup()
+
+
+full_join(tr_results_6var,tr_results_6var_mean, by = "year")
+
+str_length(tr_results_6var$year)
+str_length(tr_results_6var_mean$year)
+```
+
+```{r}
+
+# 5. Go through the original process below to make the vimp df in prep for viz.
+
+# df to store the var importances
+vimp_all_df <- data.frame(variable=character(), 
+                          MeanDecreaseAccuracy=double(),
+                          year=double(), 
+                          stringsAsFactors=FALSE) 
+
+# library(randomForest)
+# library(caret) # I think I fixed this so caret wasn't necssary
+# This code loop is a modified version of the one at:
+# https://stackoverflow.com/a/68700935/10405322
+
+set.seed(1)
+
+for (i in 1:length(yearly_dfs)){
+
+  num_nodesize = filter(tr_results_6var_mean, year == yr_list[[i]])$node_mean
+  num_mtry = filter(tr_results_6var_mean, year == yr_list[[i]])$mtry_mean
+  
+  # num_nodesize = filter(tr_results_6var, year == yr_list[[i]])$node
+  # num_mtry = filter(tr_results_6var, year == yr_list[[i]])$mtry
+  
+  rf_model <- randomForest(mission_type ~ . - year, data=yearly_dfs[[i]],
+                           ntree = 501,
+                           nodesize = num_nodesize,
+                           mtry = num_mtry,
+                           importance=TRUE)
+  
+  prediction_per_df <- predict(rf_model, yearly_dfs[[i]], type="class")
+  confmat <- table(prediction_per_df, yearly_dfs[[i]]$mission_type)
+
+  print("point A")
+  
+  vimp_year_df <- 
+    randomForest::importance(rf_model, type=1, scale = F) %>% ## FAILING HERE?
+    as.data.frame() %>%
+    arrange(desc(MeanDecreaseAccuracy)) %>%
+    rownames_to_column("variable") %>%
+    mutate(year = yr_list[[i]])
+
+  print("point B")
+  
+  vimp_all_df <- data.frame(rbind(as.matrix(vimp_all_df), as.matrix(vimp_year_df)))
+  
+  print("point C")
+  
+  # df to predict on ALL other dfs but the current
+  all_except_df <- filter(for_splitting_df, year != yr_list[[i]])
+  
+  print("point D")
+  
+  prediction_all_df <- predict(rf_model, newdata=all_except_df, type="class")
+  confmat <- table(prediction_all_df, all_except_df$mission_type)
+
+}
+
+# bind_rows(vimp_list, .id = "column_label") #old, remove
+
+vimp_all_df
+
+arrange(vimp_all_df, desc(MeanDecreaseAccuracy))
+arrange(vimp_all_df, year, desc(MeanDecreaseAccuracy))
+distinct(vimp_all_df, variable)
+
+```
+
+Now do data viz for the var imp on the new RFs.
+
+```{r}
+set.seed(1)
+
+# vv_test <-
+lev_count = nrow(distinct(vimp_all_df, variable))
+shap_vals = c(21:25,21:24) # numbers for the shapes. in this case, 9 fac levels
+
+vimp_all_df %>% 
+
+  mutate(variable = case_when(
+                    variable == "distinct_occ" ~ "distinct occupations",
+                    variable == "hq_ratio" ~ "headquarters ratio",
+                    variable == "upper_span_control" ~ "upper span of control",
+                    variable == "middle_span_control" ~ "middle span of control",
+                    variable == "formalization_ratio" ~ "formalization ratio",
+                    variable == "rule_count" ~ "rule count",
+                    variable == "n_hier_levels" ~ "levels in hierarchy",
+                    TRUE ~ as.character(variable))) %>%
+  mutate(year = factor(year), variable = factor(variable)) %>%
+  # mutate(variable = fct_reorder(variable, MeanDecreaseAccuracy, fun = max)) %>% 
+  # can't get fct_reorder to work correctly
+  
+  # mutate(mission_type = 
+  #          case_when(mission_type == "def-for" ~ 'defense or foreign',
+  #                    mission_type == "dis" ~ 'distributive',
+  #                    mission_type == "redis" ~ 'redistributive',
+  #                    mission_type == "reg" ~ 'regulatory',
+  #                    mission_type == "staff" ~ 'staff',
+  #                    TRUE ~ as.character(mission_type))) %>%
+  # pivot_longer(cols = `upper span of control`:`formalization ratio`,
+  #              names_to = "attribute", values_to = "value") %>%
+  select(year, variable, MeanDecreaseAccuracy) %>%
+  mutate(`Permutation Importance` = as.numeric(format(MeanDecreaseAccuracy,
+                                                  scientific=F))) %>%
+  # mutate(variable = reorder(`headquarters ratio` = hq_ratio,
+  #                           `rule count` = rule_count,
+  #                           `distinct occupations` = distinct_occ,
+  #                           `middle span of control` = middle_span_control,
+  #                           `upper span of control` = upper_span_control,
+  #                           #`formalization ratio` = formalization_ratio,
+  #                           `levels in hierarchy` = n_hier_levels)) %>%
+  ggplot(aes(x = year, y = `Permutation Importance`, 
+             color = variable,
+             group = variable,
+             shape = variable, 
+             fill = variable)) +
+  #geom_violin() +
+  #geom_boxplot() +
+  geom_point(size=3) +
+  # scale_shape_manual(values = c(1:lev_count)) +
+  scale_shape_manual(values=shap_vals) +
+  geom_line() +
+  # stat_summary(fun=mean, colour="red", geom="line", # linetype = "dashed",
+  #              aes(group = variable)) +
+  # facet_grid(cols = vars(mission_type), rows = vars(attribute),
+  #            # ncol = 5, # only for facet_wrap
+  #            scale = "free_y") +
+  # scale_fill_viridis_d() +
+  scale_colour_viridis_d() + 
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1))
+
+# This might be a good way to go to label the lines:
+# https://stackoverflow.com/a/51139883/10405322
+ 
+```
+
+
+Now Kim variable models using tuneranger
+First, prep
+
+```{r}
+
+# 1. I'll need to tune for every RF.
+  # 1.1. Split the data out by years.
+  # 1.2. Loop thru those dfs, doing a tuneranger for each.
+  # 1.3. Each tuneranger should be done 44 times.
+
+# set.seed(1)
+
+# 1.1. Split the data out by years.
+
+for_splitting_kim_df <- final_supermaster_df %>%
+  select(year, mission_type, 
+         # agy_size, 
+         # upper_mgmt_count, middle_employee_count, # not ratios, not scaled
+         # middle_mgmt_count, frontline_employee_count, 
+         upper_span_control, middle_span_control, 
+         hq_ratio, 
+         # sup_ratio, 
+         formalization_ratio, 
+         # rule_count, distinct_occ
+         ) %>%
+  mutate(mission_type = factor(mission_type)) %>%
+  mutate(year = as.numeric(year))
+
+yearly_kim_dfs <- for_splitting_kim_df %>%
+  group_split(year)
+
+# still makes tibbles, which could be an issue for tuneranger
+# head(yearly_dfs, n = 18)
+
+
+```
+
+Then tune (BEWARE OF RUNNING THIS: takes a while, overwrites CSVs)
+
+```{r}
+
+library(tuneRanger)
+library(ranger)
+library(mlr)
+
+library(tictoc)
+library(foreach)
+library(doParallel)
+
+# 1.2. Loop thru those dfs, doing a tuneranger for each.
+
+# Make the function to use for parallel processing, and call farther below
+
+get_tunings <- function(final_data.task){
+  foreach (i=1:45, .export='tuneRanger', .combine=rbind) %dopar% { 
+    # this should be 1:45, but 4 for testing.
+    # 44 cuz empirically the best param set occurs as 10% of rows in tuneranger
+    # .9^n < .01
+    # n > 43.7087 if I want to get the best param set 99% of the time
+    
+    # thename <- paste0("optpath", i, ".RData")
+
+    # Tuning
+    res = tuneRanger(final_data.task,
+                     num.trees = 1000, num.threads = 2, 
+                     iters = 70,
+                     # save.file.path = thename,
+                     show.info = FALSE)
+    # According to tuneranger authors, iters should be at least 70, 5 for testing
+      
+    # as.data.frame(res[1])
+    as.list(as.data.frame(res[1]))
+}
+}
+
+# These are empty dfs for collating the param set results
+empty_df <- data.frame(mtry = double(),
+                  min.node.size  = double(),
+                  sample.fraction = double(),
+                  multiclass.brier = double(),
+                  exec.time = double()
+                  )
+
+# 2. Tune for every year.
+
+for (i in 1:length(yearly_kim_dfs)) {
+#for (i in 1:3) {
+  # yearly_kim_dfs[[i]]
+  tic("parallel")
+
+  # A mlr task has to be created in order to use the package
+  final_data.task = makeClassifTask(data = yearly_kim_dfs[[i]], target = "mission_type")
+  
+  # Estimate runtime
+  # estimateTimeTuneRanger(final_data.task)
+  # print("\n")
+
+  # empty_df <- empty_df %>%
+  #   dplyr::bind_rows(data_dump)
+  
+  registerDoParallel(3)
+  
+  data_dump <- get_tunings(final_data.task)
+  
+  # 3. Dump the tuneranger output to a CSV file.
+  dumpfilename = paste0("tuneranger_kim4var_runs_year", yr_list[[i]], ".csv")
+  write.csv(data_dump, dumpfilename, row.names = FALSE)
+  rm(data_dump)
+  rm(final_data.task)
+  
+  doParallel::stopImplicitCluster()
+  
+  gc()
+  
+  object.size(x=lapply(ls(), get)) 
+  print(object.size(x=lapply(ls(), get)), units="Mb") 
+
+  # Mb <- ls() %>% sapply(. %>% get %>% object.size %>% '/'(10^6)) 
+  # cbind(Mb, "Mb") %>% as.data.frame
+  
+  toc()
+}
+
+
+# object.size(x=lapply(ls(), get)) 
+# print(object.size(x=lapply(ls(), get)), units="Mb") 
+# 
+# Mb <- ls() %>% sapply(. %>% get %>% object.size %>% '/'(10^6)) 
+# cbind(Mb, "Mb") %>% as.data.frame
+
+
+```
+
+End of RF tuning for kim4var, with results saved in CSVs.
+
+Now to process for var imp.
+
+```{r}
+# 4.1 Loop through CSVs, save to a df with a column for year
+
+filenames = paste0("tuneranger_kim4var_runs_year", rep(2004:2021), ".csv")
+filenames
+
+# 4.2 Get the lowest brier params for each year and save to df.
+
+tr_results_kim4var_raw <- 
+read_csv(filenames, id = "year") %>%
+   mutate(year = str_remove_all(year, ".csv")) %>%
+   mutate(year = str_remove_all(year, "tuneranger_kim4var_runs_year")) %>%
+   # mutate(year = as.factor(year)) %>%
+   group_by(year) %>%
+   arrange(recommended.pars.multiclass.brier) %>%
+   slice_min(recommended.pars.multiclass.brier, n = 10) %>%
+   ungroup()
+
+# Spot check looks solid. Proceed with getting single param set per year.
+
+tr_results_kim4var <- 
+  tr_results_kim4var_raw %>% 
+  select(year, contains("brier"), contains("mtry"), contains("node")) %>%
+  arrange(year, recommended.pars.multiclass.brier) %>%
+  rename(brier = recommended.pars.multiclass.brier) %>%
+  rename(mtry = recommended.pars.mtry) %>%
+  rename(node = recommended.pars.min.node.size) %>%
+  group_by(year) %>%
+  arrange(brier) %>%
+  slice_min(brier, n = 1) %>%
+  ungroup()
+
+
+tr_results_kim4var_mean <- 
+  tr_results_kim4var_raw %>% 
+  select(year, contains("brier"), contains("mtry"), contains("node")) %>%
+  arrange(year, recommended.pars.multiclass.brier) %>%
+  rename(brier = recommended.pars.multiclass.brier) %>%
+  rename(mtry = recommended.pars.mtry) %>%
+  rename(node = recommended.pars.min.node.size) %>%
+  group_by(year) %>%
+  arrange(brier) %>%
+  slice_min(brier, n = 2) %>%
+  summarize(mtry_mean = round(mean(mtry)), node_mean = round(mean(node))) %>%
+  ungroup()
+
+
+full_join(tr_results_kim4var,tr_results_kim4var_mean, by = "year")
+
+str_length(tr_results_kim4var$year)
+str_length(tr_results_kim4var_mean$year)
+
+
+```
+
+Calculate all the var importances for kim4var
+
+```{r}
+
+yr_list = as.list(seq(2004, 2021, by=1))
+
+
+# df to store the var importances
+kim_vimp_all_df <- data.frame(variable=character(), 
+                          MeanDecreaseAccuracy=double(),
+                          year=double(), 
+                          stringsAsFactors=FALSE) 
+
+# library(randomForest)
+# library(caret) # I think I fixed this so caret wasn't necssary
+# This code loop is a modified version of the one at:
+# https://stackoverflow.com/a/68700935/10405322
+
+set.seed(1)
+
+for (i in 1:length(yearly_kim_dfs)){
+
+  # num_nodesize = filter(tr_results_6var, year == yr_list[[i]])$node
+  # num_mtry = filter(tr_results_6var, year == yr_list[[i]])$mtry
+    
+  num_nodesize = filter(tr_results_kim4var_mean, year == yr_list[[i]])$node_mean
+  num_mtry = filter(tr_results_kim4var_mean, year == yr_list[[i]])$mtry_mean
+  
+  rf_model <- randomForest(mission_type ~ . - year, data=yearly_kim_dfs[[i]],
+                           ntree = 501,
+                           nodesize = num_nodesize,
+                           mtry = num_mtry,
+                           importance=TRUE)
+
+  kim_prediction_per_df <- predict(rf_model, yearly_kim_dfs[[i]], type="class")
+  confmat <- table(kim_prediction_per_df, yearly_kim_dfs[[i]]$mission_type)
+  
+  kim_vimp_year_df <- 
+    randomForest::importance(rf_model, type=1, scale = F) %>%
+    as.data.frame() %>%
+    arrange(desc(MeanDecreaseAccuracy)) %>%
+    rownames_to_column("variable") %>%
+    mutate(year = yr_list[[i]])
+
+  kim_vimp_all_df <- data.frame(rbind(as.matrix(kim_vimp_all_df), 
+                                      as.matrix(kim_vimp_year_df)))
+  
+  # df to predict on ALL other dfs but the current
+  kim_all_except_df <- filter(for_splitting_kim_df, year != yr_list[[i]])
+  
+  kim_prediction_all_df <- predict(rf_model, newdata=kim_all_except_df, type="class")
+  confmat <- table(kim_prediction_all_df, kim_all_except_df$mission_type)
+  
+}
+
+kim_vimp_all_df
+
+arrange(kim_vimp_all_df, desc(MeanDecreaseAccuracy))
+
+
+```
+
+Now Kim var imp charted.
+
+```{r}
+set.seed(1)
+
+# vv_test <-
+lev_count = nrow(distinct(kim_vimp_all_df, variable))
+shap_vals = c(21:24) # numbers for the shapes. in this case, 9 fac levels
+
+
+kim_vimp_all_df %>% 
+  mutate(variable = case_when(
+                    variable == "hq_ratio" ~ "headquarters ratio",
+                    variable == "upper_span_control" ~ "upper span of control",
+                    variable == "middle_span_control" ~ "middle span of control",
+                    variable == "formalization_ratio" ~ "formalization ratio",
+                    TRUE ~ as.character(variable))) %>%
+  
+  mutate(year = factor(year), variable = factor(variable)) %>%
+
+  select(year, variable, MeanDecreaseAccuracy) %>%
+  mutate(`Permutation Importance` = as.numeric(format(MeanDecreaseAccuracy,
+                                                  scientific=F)),
+         year = factor(year),
+         variable = factor(variable)) %>%
+  ggplot(aes(x = year, y = `Permutation Importance`, 
+             color = variable, group = variable,
+             shape = variable, fill = variable)) +
+  #geom_violin() +
+  #geom_boxplot() +
+  geom_point(size=3) +
+  # scale_shape_manual(values = c(1:lev_count)) +
+  scale_shape_manual(values=shap_vals) +
+  geom_line() +
+  # stat_summary(fun=mean, colour="red", geom="line", # linetype = "dashed",
+  #              aes(group = variable)) +
+  # facet_grid(cols = vars(mission_type), rows = vars(attribute),
+  #            # ncol = 5, # only for facet_wrap
+  #            scale = "free_y") +
+  # scale_fill_viridis_d() +
+  scale_colour_viridis_d() + 
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1))
+
+# This might be a good way to go to label the lines:
+# https://stackoverflow.com/a/51139883/10405322
+ 
+```
+
+
+```{r}
+save.image(file="pre_confmatrix_metrics_calcs.RData") 
+```
+
+
+Basically, Kim's 4 variables are about as good, on average, as the 6.
+This is after hyperparameter optimization.
+This makes some sense, because most of the variables share the same info.
+"Levels of hierarchy" was the only new variable, and it adds little info.
+And indeed, levels of hierarchy is the often the least important variable.
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(forcats)
+library(viridis)
+library(readr)
+library(randomForest)
+
+load(file="pre_confmatrix_metrics_calcs.RData")
+
+```
+
+Generate the confusion matrix metrics for the 6var set.
+
+```{r}
+
+# Make the functions to generate the summary confusion matrix and metrics
+
+multi_class_rates <- function(confusion_matrix) {
+    true_positives  <- diag(confusion_matrix)
+    false_positives <- colSums(confusion_matrix) - true_positives
+    false_negatives <- rowSums(confusion_matrix) - true_positives
+    true_negatives  <- sum(confusion_matrix) - (true_positives + false_positives + false_negatives)
+
+    return(data.frame(true_positives, false_positives, true_negatives,
+                      false_negatives, row.names = names(true_positives)))
+}
+
+# total number of false positives always equals the number of false negatives
+
+generate_cm_metrics <-  function(per_class_rates, year_input){
+  
+  # print(per_class_rates) # for testing
+  
+  # For here I have to do the average of each
+  
+  true_positives <- sum(per_class_rates$true_positives)
+  false_positives <- sum(per_class_rates$false_positives)
+  false_negatives <- sum(per_class_rates$false_negatives)
+  true_negatives  <- sum(per_class_rates$true_negatives)
+  
+  metric_vec <- c(year_input, 
+                  true_positives,
+                  false_positives,
+                  false_negatives,
+                  true_negatives)
+  
+  print(metric_vec) # testing
+  
+  # Calculating all the metrics
+  
+  # accuracy 
+  v_accuracy <- 
+  (true_positives+true_negatives)/(true_positives+false_positives+false_negatives+true_negatives)
+
+  # precision
+  v_precision <- 
+  true_positives/(true_positives+false_positives)
+  
+  # recall
+  v_recall <- 
+  true_positives/(true_positives+false_negatives)
+  
+  # F1-score
+  v_f1_score <- 
+  (2*true_positives)/((2*true_positives)+false_positives+false_negatives)
+  
+  # Specificity
+  v_specificity <- 
+  true_negatives/(false_positives+true_negatives)
+  
+  metric_df <- data.frame(year = year_input,
+                   accuracy = v_accuracy,
+                   precision = v_precision,
+                   recall = v_recall,
+                   f1_score = v_f1_score,
+                   specificity = v_specificity
+                   )
+  
+  return(metric_df)
+}
+
+
+yr_list = as.list(seq(2004, 2021, by=1))
+
+# accuracies_per_df = rep(NA, length(yearly_dfs))
+# accuracies_all_df = rep(NA, length(yearly_dfs))
+
+
+# make empty df to store the metrics
+
+metrics_per_df <- data.frame(year = double(),
+                                       accuracy = double(),
+                                       precision = double(),
+                                       recall = double(),
+                                       f1_score = double(),
+                                       specificity = double(),
+                                       stringsAsFactors=FALSE
+                                       )
+
+metrics_all_except_df <- data.frame(year = double(),
+                                       accuracy = double(),
+                                       precision = double(),
+                                       recall = double(),
+                                       f1_score = double(),
+                                       specificity = double(),
+                                       stringsAsFactors=FALSE
+                                       ) 
+
+# library(randomForest)
+# library(caret) # I think I fixed this so caret wasn't necssary
+# This code loop is a modified version of the one at:
+# https://stackoverflow.com/a/68700935/10405322
+
+set.seed(1)
+
+for (i in 1:length(yearly_dfs)){
+
+  # num_nodesize = filter(tr_results_6var, year == yr_list[[i]])$node
+  # num_mtry = filter(tr_results_6var, year == yr_list[[i]])$mtry
+    
+  num_nodesize = filter(tr_results_6var_mean, year == yr_list[[i]])$node_mean
+  num_mtry = filter(tr_results_6var_mean, year == yr_list[[i]])$mtry_mean
+  
+  rf_model <- randomForest(mission_type ~ . - year, data=yearly_dfs[[i]],
+                           ntree = 501,
+                           nodesize = num_nodesize,
+                           mtry = num_mtry,
+                           importance=TRUE)
+
+  # df to predict on single year
+  
+  prediction_per_df <- predict(rf_model, yearly_dfs[[i]], type="class")
+  confmat <- table(prediction_per_df, yearly_dfs[[i]]$mission_type)
+  print(yr_list[[i]])
+  print(confmat)
+  
+  per_class_rates <- multi_class_rates(confmat)
+  mets <- generate_cm_metrics(per_class_rates, yr_list[[i]])
+  
+  metrics_per_df <- rbind(metrics_per_df, mets)
+
+  # df to predict on ALL other dfs but the current
+  
+  all_except_df <- filter(for_splitting_df, year != yr_list[[i]])
+  
+  prediction_all_df <- predict(rf_model, newdata=all_except_df, type="class")
+  confmat <- table(prediction_all_df, all_except_df$mission_type)
+  print(confmat)
+  
+  per_class_rates <- multi_class_rates(confmat)
+  mets <- generate_cm_metrics(per_class_rates, yr_list[[i]])
+
+  metrics_all_except_df <- rbind(metrics_all_except_df, mets)
+
+}
+
+metrics_per_df
+metrics_all_except_df
+
+```
+
+
+Generate the confusion matrix metrics for the 4var Kim set.
+
+```{r}
+
+multi_class_rates <- function(confusion_matrix) {
+    true_positives  <- diag(confusion_matrix)
+    false_positives <- colSums(confusion_matrix) - true_positives
+    false_negatives <- rowSums(confusion_matrix) - true_positives
+    true_negatives  <- sum(confusion_matrix) - true_positives -
+        false_positives - false_negatives
+    return(data.frame(true_positives, false_positives, true_negatives,
+                      false_negatives, row.names = names(true_positives)))
+}
+
+generate_cm_metrics <-  function(per_class_rates, year_input){
+  true_positives <- sum(per_class_rates$true_positives)
+  false_positives <- sum(per_class_rates$false_positives)
+  false_negatives <- sum(per_class_rates$false_negatives)
+  true_negatives  <- sum(per_class_rates$true_negatives)
+  
+  metric_vec <- c("year", true_positives,
+                  false_positives,
+                  false_negatives,
+                  true_negatives)
+  
+  # Calculating all the metrics
+  
+  # accuracy 
+  v_accuracy <- 
+  (true_positives+true_negatives)/(true_positives+false_positives+false_negatives+true_negatives)
+  
+  # precision
+  v_precision <- 
+  true_positives/(true_positives+false_positives)
+  
+  # recall
+  v_recall <- 
+  true_positives/(true_positives+false_negatives)
+  
+  # F1-score
+  v_f1_score <- 
+  (2*true_positives)/((2*true_positives)+false_positives+false_negatives)
+  
+  # Specificity
+  v_specificity <- 
+  true_negatives/(false_positives+true_negatives)
+  
+  metric_df <- data.frame(year = year_input,
+                   accuracy = v_accuracy,
+                   precision = v_precision,
+                   recall = v_recall,
+                   f1_score = v_f1_score,
+                   specificity = v_specificity
+                   )
+  return(metric_df)
+}
+
+yr_list = as.list(seq(2004, 2021, by=1))
+
+kim_accuracies_per_df = rep(NA, length(yearly_kim_dfs))
+kim_accuracies_all_df = rep(NA, length(yearly_kim_dfs))
+
+
+# make empty df to store the metrics
+
+kim_metrics_per_df <- data.frame(year = double(),
+                                       accuracy = double(),
+                                       precision = double(),
+                                       recall = double(),
+                                       f1_score = double(),
+                                       specificity = double(),
+                                       stringsAsFactors=FALSE
+                                       )
+
+kim_metrics_all_except_df <- data.frame(year = double(),
+                                       accuracy = double(),
+                                       precision = double(),
+                                       recall = double(),
+                                       f1_score = double(),
+                                       specificity = double(),
+                                       stringsAsFactors=FALSE
+                                       ) 
+
+# library(randomForest)
+# library(caret) # I think I fixed this so caret wasn't necssary
+# This code loop is a modified version of the one at:
+# https://stackoverflow.com/a/68700935/10405322
+
+set.seed(1)
+
+for (i in 1:length(yearly_kim_dfs)){
+
+  # num_nodesize = filter(tr_results_6var, year == yr_list[[i]])$node
+  # num_mtry = filter(tr_results_6var, year == yr_list[[i]])$mtry
+    
+  num_nodesize = filter(tr_results_kim4var_mean, year == yr_list[[i]])$node_mean
+  num_mtry = filter(tr_results_kim4var_mean, year == yr_list[[i]])$mtry_mean
+  
+  rf_model <- randomForest(mission_type ~ . - year, data=yearly_kim_dfs[[i]],
+                           ntree = 501,
+                           nodesize = num_nodesize,
+                           mtry = num_mtry,
+                           importance=TRUE)
+
+  # df to predict on single year
+  
+  kim_prediction_per_df <- predict(rf_model, yearly_kim_dfs[[i]], type="class")
+  confmat <- table(prediction_per_df, yearly_kim_dfs[[i]]$mission_type)
+  print(yr_list[[i]])
+  print(confmat)
+  
+  per_class_rates <- multi_class_rates(confmat)
+  mets <- generate_cm_metrics(per_class_rates, yr_list[[i]])
+  
+  kim_metrics_per_df <- rbind(kim_metrics_per_df, mets)
+
+  # df to predict on ALL other dfs but the current
+  
+  kim_all_except_df <- filter(for_splitting_kim_df, year != yr_list[[i]])
+  
+  kim_prediction_all_df <- predict(rf_model, newdata=kim_all_except_df, type="class")
+  confmat <- table(kim_prediction_all_df, kim_all_except_df$mission_type)
+  print(confmat)
+  
+  per_class_rates <- multi_class_rates(confmat)
+  mets <- generate_cm_metrics(per_class_rates, yr_list[[i]])
+  
+  kim_metrics_all_except_df <- rbind(kim_metrics_all_except_df, mets)
+
+}
+
+kim_metrics_per_df
+kim_metrics_all_except_df
+
+kim_metrics_per_df <- kim_metrics_per_df %>%
+  rename_with( ~ paste0("kim_", .x, recycle0 = TRUE),
+  -starts_with("year")
+)
+
+kim_metrics_all_except_df <- kim_metrics_all_except_df %>%
+  rename_with( ~ paste0("kim_", .x, recycle0 = TRUE),
+  -starts_with("year")
+)
+
+kim_metrics_per_df
+kim_metrics_all_except_df
+
+
+```
+
+
+```{r}
+roundit_percent <- function(x) {
+  return(percent(round(x, digits = 4))) 
+}
+
+roundit <- function(x) {
+  return(round(x, digits = 4)) 
+}
+
+brier_diff_df <-
+  rename_with(
+  tr_results_kim4var,
+  ~ paste0("kim_", .x, recycle0 = TRUE),
+  -starts_with("y")
+  ) %>%
+  right_join(tr_results_6var, by = 'year') %>%
+  select(year, kim_brier, brier) %>%
+  mutate(brier_improvement = brier - kim_brier)
+
+per_year_metrics_scores <- 
+  brier_diff_df %>%
+  mutate(year = as.numeric(year)) %>%
+  right_join(metrics_all_except_df, by = 'year') %>%
+  right_join(kim_metrics_all_except_df, by = 'year') %>%
+  select(!ends_with("mtry") & !ends_with("node")) %>%
+  mutate(accuracy_improvement = accuracy - kim_accuracy) %>%
+  mutate(precision_improvement = precision - kim_precision) %>%
+  mutate(recall_improvement = recall - kim_recall) %>%
+  mutate(f1_score_improvement = f1_score - kim_f1_score) %>%
+  mutate(specificity_improvement = specificity - kim_specificity) %>%
+  mutate(across(!contains("year"), roundit))
+
+nice_metrics <-
+  per_year_metrics_scores %>%
+  mutate(across(!contains("year") & !contains("brier"), roundit_percent)) %>%
+  select(year,  
+         kim_accuracy, accuracy, 
+         kim_precision, precision,
+         kim_recall, recall,
+         kim_specificity, specificity,
+         kim_f1_score, f1_score,
+         kim_brier, brier)
+
+nice_metrics
+
+per_year_metrics_diff <- 
+  per_year_metrics_scores %>%
+  select(year, contains("improve")) %>%
+  select(year,  
+       accuracy_improvement,
+       precision_improvement,
+       recall_improvement,
+       specificity_improvement,
+       f1_score_improvement,
+       brier_improvement)
+
+per_year_metrics_diff
+
+nice_metrics_diff <-
+per_year_metrics_diff %>%
+  mutate(across(!contains("year") & !contains("brier"), roundit_percent))
+
+nice_metrics_diff
+
+nice_mean_metrics_diff <-
+  per_year_metrics_diff %>%
+  summarize_all(mean) %>%
+  select(-year) %>% # Trying to round these small differences into a percent never works
+  mutate(across(!contains("brier"), roundit))
+
+
+nice_mean_metrics_diff
+
+# %>% 
+#   mutate_at(!contains("year"), funs(percent(round(., 3))))
+
+# test
+# roundit(0.3432432423432)
+
+# write CSVs with this info
+
+
+write.csv(nice_metrics, "nice_metrics.csv", row.names = FALSE) 
+write.csv(nice_metrics_diff, "nice_metrics_diff.csv", row.names = FALSE) 
+write.csv(nice_mean_metrics_diff, "nice_mean_metrics_diff.csv", row.names = FALSE) 
+
+```
+
+
+End of the new code for hyperparameter tuning.
+
+
